@@ -146,6 +146,25 @@ public final class ExecutorCallAdapterFactoryTest {
     verifyNoMoreInteractions(delegate);
   }
 
+  @Test public void shouldThrowExceptionOnCancel() {
+    Type returnType = new TypeToken<Call<String>>() {}.getType();
+    CallAdapter<Call<?>> adapter =
+      (CallAdapter<Call<?>>) factory.get(returnType, NO_ANNOTATIONS, retrofit);
+    final Response<String> response = Response.success("Hi");
+    Call<String> call = (Call<String>) adapter.adapt(
+      new EmptyCall() {
+        @Override public void enqueue(Callback<String> callback) {
+          callback.onResponse(response, retrofit);
+        }
+        @Override public void cancel(){
+        }
+      }
+    );
+    call.cancel(); // with this we set cancel flag to true
+    call.enqueue(callback);
+    verify(callback).onFailure(any(Exception.class));
+  }
+
   static class EmptyCall implements Call<String> {
     @Override public void enqueue(Callback<String> callback) {
       throw new UnsupportedOperationException();
